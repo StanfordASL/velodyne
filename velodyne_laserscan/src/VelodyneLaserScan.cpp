@@ -97,6 +97,7 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
   // Construct LaserScan message
   if ((offset_x >= 0) && (offset_y >= 0) && (offset_r >= 0)) {
     const float RESOLUTION = std::abs(cfg_.resolution);
+    const float Z_MIN = cfg_.z_min;
     const size_t SIZE = 2.0 * M_PI / RESOLUTION;
     sensor_msgs::LaserScanPtr scan(new sensor_msgs::LaserScan());
     scan->header = msg->header;
@@ -111,14 +112,18 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
       scan->intensities.resize(SIZE);
       for (sensor_msgs::PointCloud2ConstIterator<float> it(*msg, "x"); it != it.end(); ++it) {
         const uint16_t r = *((const uint16_t*)(&it[5])); // ring
-        if (r == ring) {
+        const float z = it[2]; // z
+        if ((r <= ring) && (z >= Z_MIN)) {
           const float x = it[0]; // x
           const float y = it[1]; // y
           const float i = it[4]; // intensity
           const int bin = (atan2f(y, x) + (float)M_PI) / RESOLUTION;
           if ((bin >= 0) && (bin < (int)SIZE)) {
-            scan->ranges[bin] = sqrtf(x * x + y * y);
-            scan->intensities[bin] = i;
+            const float d = sqrtf(x * x + y * y);
+            if (d < scan->ranges[bin]) {
+              scan->ranges[bin] = d;
+              scan->intensities[bin] = i;
+            }
           }
         }
       }
@@ -129,17 +134,22 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
         sensor_msgs::PointCloud2ConstIterator<uint16_t> iter_r(*msg, "ring");
         sensor_msgs::PointCloud2ConstIterator<float> iter_x(*msg, "x");
         sensor_msgs::PointCloud2ConstIterator<float> iter_y(*msg, "y");
+        sensor_msgs::PointCloud2ConstIterator<float> iter_z(*msg, "z");
         sensor_msgs::PointCloud2ConstIterator<float> iter_i(*msg, "intensity");
         for ( ; iter_r != iter_r.end(); ++iter_x, ++iter_y, ++iter_r, ++iter_i) {
           const uint16_t r = *iter_r; // ring
-          if (r == ring) {
+          const float z = *iter_z; // z
+          if ((r <= ring) && (z >= Z_MIN)) {
             const float x = *iter_x; // x
             const float y = *iter_y; // y
             const float i = *iter_i; // intensity
             const int bin = (atan2f(y, x) + (float)M_PI) / RESOLUTION;
             if ((bin >= 0) && (bin < (int)SIZE)) {
-              scan->ranges[bin] = sqrtf(x * x + y * y);
-              scan->intensities[bin] = i;
+              const float d = sqrtf(x * x + y * y);
+              if (d < scan->ranges[bin]) {
+                scan->ranges[bin] = d;
+                scan->intensities[bin] = i;
+              }
             }
           }
         }
@@ -147,14 +157,19 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
         sensor_msgs::PointCloud2ConstIterator<uint16_t> iter_r(*msg, "ring");
         sensor_msgs::PointCloud2ConstIterator<float> iter_x(*msg, "x");
         sensor_msgs::PointCloud2ConstIterator<float> iter_y(*msg, "y");
+        sensor_msgs::PointCloud2ConstIterator<float> iter_z(*msg, "z");
         for ( ; iter_r != iter_r.end(); ++iter_x, ++iter_y, ++iter_r) {
           const uint16_t r = *iter_r; // ring
-          if (r == ring) {
+          const float z = *iter_z; // z
+          if ((r <= ring) && (z >= Z_MIN)) {
             const float x = *iter_x; // x
             const float y = *iter_y; // y
             const int bin = (atan2f(y, x) + (float)M_PI) / RESOLUTION;
             if ((bin >= 0) && (bin < (int)SIZE)) {
-              scan->ranges[bin] = sqrtf(x * x + y * y);
+              const float d = sqrtf(x * x + y * y);
+              if (d < scan->ranges[bin]) {
+                scan->ranges[bin] = d;
+              }
             }
           }
         }

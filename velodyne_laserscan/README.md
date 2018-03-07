@@ -1,0 +1,1 @@
+Adapted from [https://github.com/ros-drivers/velodyne/tree/master/velodyne_laserscan](https://github.com/ros-drivers/velodyne/tree/master/velodyne_laserscan) to integrate all rings below the `ring` parameter into a single scan.
